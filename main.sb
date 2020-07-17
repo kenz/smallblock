@@ -1,0 +1,166 @@
+GraphicsWindow.MouseMove = OnMouseMove
+GraphicsWindow.MouseUp = OnMouseUp
+width = 640
+height = 480
+padSize = 120
+BOX_WIDTH = 64
+BOX_HEIGHT = 24
+halfPadSize = padSize/2
+start:
+GraphicsWindow.Clear()
+GraphicsWindow.BrushColor = "White"
+GraphicsWindow.DrawText(2,420,"Click to end")
+GraphicsWindow.BackgroundColor = "Black"
+GraphicsWindow.BrushColor = "Orange"
+GraphicsWindow.PenWidth = 0
+pad = Shapes.AddRectangle(padSize, 12)
+
+GraphicsWindow.BrushColor = "Red"
+boxCount = 0
+For r = 0 to 9
+  For c = 0 To 8
+    box[r][c] = Shapes.AddRectangle(BOX_WIDTH-2,BOX_HEIGHT-2)
+    boxEnable[r][c] = "True"
+    Shapes.Move(box[r][c],r*BOX_WIDTH+1,c*BOX_HEIGHT+1)
+    boxCount = boxCount + 1
+  EndFor
+Endfor
+
+GraphicsWindow.Width = width
+GraphicsWindow.Height = height
+x = width /2
+y = height /2
+xSpeed = 0
+ySpeed = 0
+
+SIZE = 16
+HALF_SIZE = SIZE / 2
+maxYSpeed = 6
+maxXSpeed = 2
+x = width/2
+y = width/2
+g = 0.015
+GraphicsWindow.BrushColor = "White"
+GraphicsWindow.PenColor="White"
+ball = Shapes.AddEllipse(SIZE, SIZE)
+
+runState = "True"
+while(runState)
+  ySpeed = ySpeed + g
+  If ySpeed > maxYSpeed Then
+    ySpeed = maxYSpeed
+  EndIf
+  If ySpeed < -maxYSpeed Then
+    ySpeed = -maxYSpeed
+  EndIf
+  If xSpeed > maxXSpeed Then
+    xSpeed = maxXSpeed
+  EndIf
+  If xSpeed < -maxXSpeed Then
+    xSpeed = -maxXSpeed
+  EndIf
+  x = x + xSpeed
+  y = y + ySpeed
+  If (x+SIZE+xSpeed >= width or x <= 0) Then
+    Sound.PlayClick()
+    xSpeed = -xSpeed
+    If x<=0 Then
+      x=1
+    Else
+      x=width-SIZE -1
+    EndIf
+  EndIf
+  If (y <= 0) Then
+    Sound.PlayClick()
+    ySpeed = -ySpeed
+    y=1
+  EndIf
+  padY = Shapes.GetTop (pad)
+  padX = Shapes.GetLeft(pad)
+
+  If (y+SIZE > padY and x+SIZE >= padX and x <= padX + padSize) Then
+    Sound.PlayClick()
+    padPoint = ((x + HALF_SIZE )-(padX+halfPadSize))
+    ySpeed = -(ySpeed*0.50 + (halfPadSize+SIZE-Math.Abs(padPoint))/30)
+    xSpeed = xSpeed + padPoint/20
+    y = padY-SIZE
+  EndIf
+  Shapes.Move(ball, x, y)
+  xIndex1 = Math.Floor(x / BOX_WIDTH)
+  yIndex1 = Math.Floor(y / BOX_HEIGHT)
+  xIndex2 = Math.Floor((x+SIZE) / BOX_WIDTH)
+  yIndex2 = Math.Floor((y+SIZE) / BOX_HEIGHT)
+  xCrash = 0
+  yCrash = 0
+  If boxEnable[xIndex1][yIndex1] Then
+    xCrash = 1
+    yCrash = 1
+  EndIf
+  If boxEnable[xIndex2][yIndex1] Then
+    xCrash = xCrash-1
+    yCrash = yCrash+1
+  EndIf
+  If boxEnable[xIndex1][yIndex2] Then
+    xCrash = xCrash+1
+    yCrash = yCrash-1
+  EndIf
+  If boxEnable[xIndex2][yIndex2] Then
+    xCrash = xCrash-1
+    yCrash = yCrash-1
+  EndIf
+  If boxEnable[xIndex1][yIndex1] Then
+    Sound.PlayClick()
+    boxEnable[xIndex1][yIndex1]="False"
+    Shapes.Remove(box[xIndex1][yIndex1])
+    boxCount = boxCount -1
+  EndIf
+  If boxEnable[xIndex2][yIndex1] Then
+    Sound.PlayClick()
+    boxEnable[xIndex2][yIndex1]="False"
+    Shapes.Remove(box[xIndex2][yIndex1])
+    boxCount = boxCount -1
+  EndIf
+  If boxEnable[xIndex1][yIndex2] Then
+    Sound.PlayClick()
+    boxEnable[xIndex1][yIndex2]="False"
+    Shapes.Remove(box[xIndex1][yIndex2])
+    boxCount = boxCount -1
+  EndIf
+  If boxEnable[xIndex2][yIndex2] Then
+    Sound.PlayClick()
+    boxEnable[xIndex2][yIndex2]="False"
+    Shapes.Remove(box[xIndex2][yIndex2])
+    boxCount = boxCount -1
+  EndIf
+  If boxCount = 0 Then
+    Goto GameClear
+  EndIf
+  If xCrash <> 0 Then
+    xSpeed = -xSpeed * 0.9
+  EndIf
+  If yCrash <> 0 Then
+    ySpeed = -ySpeed * 0.9
+  EndIf
+  Program.Delay(7)
+  If (y > height) Then
+   Goto GameOVer
+  EndIf
+EndWhile
+
+GameOver:
+Sound.PlayBellRing()
+GraphicsWindow.ShowMessage("You Lose", "GAME OVER")
+Goto start
+
+GameClear:
+Sound.PlayChime()
+GraphicsWindow.ShowMessage("You Win", "CLEAR")
+Goto start
+
+Sub OnMouseMove
+  paddleX = Mouse.MouseX
+  Shapes.Move(pad, paddleX - padsize/2, GraphicsWindow.Height - 12)
+EndSub
+Sub OnMouseUp
+  Program.End()
+EndSub
